@@ -37,6 +37,7 @@ async function run() {
         await client.connect();
 
         const productCollection = client.db('asd-Industrial').collection('product');
+        const buyingCardCollection = client.db('asd-Industrial').collection('selling');
 
         //  Generating tocken from user login
         // app.post('/login', (req, res) => {
@@ -53,27 +54,25 @@ async function run() {
             res.send(product);
         });
 
-        //  Load single item to buy and update
+        //  Load single item to buy
         app.get("/product/:id", async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
-
             const item = await productCollection.findOne(query);
-
             res.send(item);
         });
 
         //  updating item after buying
         app.put("/product/:id", async (req, res) => {
             const id = req.params.id;
-            const updateItem = req.body;
+            const updatedProductQuntity = req.body;
             const filter = { _id: ObjectId(id) };
 
             const options = { upsert: true };
 
             const updateDoc = {
                 $set: {
-                    quantity: updateItem.quantity
+                    availableQuantity: updatedProductQuntity.availableQuantity
                 },
             }
             const result = await productCollection.updateOne(filter, updateDoc, options);
@@ -101,23 +100,12 @@ async function run() {
 
 
 
-        // //  My inventory item inserting to database
-        // app.post('/myitems', async (req, res) => {
-        //     const myItem = req.body;
-        //     const tokenInfo = req.headers.authoraization;
-        //     const [email, accessToken] = tokenInfo?.split(" ");
-
-        //     const decoded = verifyToken(accessToken);
-        //     // console.log(decoded);
-
-        //     if (email === decoded.email) {
-        //         const result = await myInventoryCollection.insertOne(myItem);
-
-        //         res.send(result);
-        //     }else{
-        //         res.send({success: 'UnAuthoraized access'});
-        //     }
-        // });
+        //  My card item
+        app.post('/cardItem', async (req, res) => {
+            const myItem = req.body;
+            const result = await buyingCardCollection.insertOne(myItem);
+            res.send(result);
+        });
 
 
         //  Get My added Item from database 
