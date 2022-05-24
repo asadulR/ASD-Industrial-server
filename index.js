@@ -106,30 +106,29 @@ async function run() {
             const result = await buyingCardCollection.insertOne(myItem);
             res.send(result);
         });
+        
+        //  Get My card Item from database 
 
+        app.get('/myitems', async (req, res) => {
+            const email = req.query.email;
+            // console.log(email)
+            const query = { buyerEmail: email };
+            const cursor = buyingCardCollection.find(query);
 
-        //  Get My added Item from database 
+            const myItems = await cursor.toArray();
 
-        // app.get('/myitems', async (req, res) => {
-        //     const email = req.query.email;
-        //     // console.log(email)
+            res.send(myItems);
 
-        //     const query = { email: email };
-        //     const cursor = myInventoryCollection.find(query);
+        })
 
-        //     const myItems = await cursor.toArray();
-
-        //     res.send(myItems);
-
-        // })
-
-        // //  deleting myAdded item from MyaddedCollection database
-        // app.delete('/myitems/:code', async (req, res) => {
-        //     const code = req.params.code;
-        //     const query = { code: code };
-        //     const result = await (myInventoryCollection.deleteOne(query));
-        //     res.send(result);
-        // })
+        //  deleting myAdded item from MyaddedCollection database
+        app.delete('/delete-myitems/:id', async (req, res) => {
+            const id = req.params.id;
+            // console.log(id)
+            const query = { _id: ObjectId(id) };
+            const result = await (buyingCardCollection.deleteOne(query));
+            res.send(result);
+        })
 
         // // deleting item from inventory items collection
 
