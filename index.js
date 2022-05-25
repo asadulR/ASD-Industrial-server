@@ -38,6 +38,7 @@ async function run() {
 
         const productCollection = client.db('asd-Industrial').collection('product');
         const buyingCardCollection = client.db('asd-Industrial').collection('selling');
+        const reviewCollection = client.db('asd-Industrial').collection('reviews');
 
         //  Generating tocken from user login
         // app.post('/login', (req, res) => {
@@ -52,6 +53,13 @@ async function run() {
             const cursor = productCollection.find(query);
             const product = await cursor.toArray();
             res.send(product);
+        });
+        // load reviews from database
+        app.get('/reviews', async (req, res) => {
+            const query = {};
+            const cursor = reviewCollection.find(query);
+            const review = await cursor.toArray();
+            res.send(review);
         });
 
         //  Load single item to buy
@@ -104,6 +112,13 @@ async function run() {
         app.post('/cardItem', async (req, res) => {
             const myItem = req.body;
             const result = await buyingCardCollection.insertOne(myItem);
+            res.send(result);
+        });
+
+        //  Adding review to database
+        app.post('/add-review', async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
             res.send(result);
         });
         
