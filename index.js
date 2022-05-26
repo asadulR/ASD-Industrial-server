@@ -14,11 +14,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.send('ASD Industrial server is running');
+    res.send('ASD Industrial heroku server is running');
 });
 
 app.listen(port, () => {
-    console.log('ASD Industrial heroku server is listenning, ', port);
+    console.log('ASD Industrial server is listenning, ', port);
 });
 
 
