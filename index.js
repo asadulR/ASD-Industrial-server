@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-
+const stripe = require('stripe')('sk_test_51L0sFbGquOMSRORH9w60g3R0DUTFrxU7tFpmgUW3JHqFCwmio60Dxcy3uQwhWyzzLXnZXSYsV4zv6amVlLvQAQCp00Z5fZh0qr');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
@@ -21,8 +21,6 @@ app.listen(port, () => {
     console.log('ASD Industrial server is listenning, ', port);
 });
 
-// asd-industrial
-//  qMoe7lelTEGLWrAB
 
 
 
@@ -39,14 +37,15 @@ async function run() {
         const productCollection = client.db('asd-Industrial').collection('product');
         const buyingCardCollection = client.db('asd-Industrial').collection('selling');
         const reviewCollection = client.db('asd-Industrial').collection('reviews');
+        const usersCollection = client.db('asd-Industrial').collection('users');
 
         //  Generating tocken from user login
-        // app.post('/login', (req, res) => {
-        //     const email = req.body;
-        //     const token = jwt.sign(email, process.env.TOEKEN_SECRET);
-        //     // console.log(token);
-        //     res.send({ token })
-        // })
+        app.post('/login', (req, res) => {
+            const email = req.body;
+            const token = jwt.sign(email, process.env.ACCESS_TOKEN);
+            // console.log(token);
+            res.send({ token })
+        })
         //  load items from database
         app.get('/product', async (req, res) => {
             const query = {};
@@ -70,6 +69,14 @@ async function run() {
             res.send(item);
         });
 
+        // load single item information for payment complete
+        app.get("/cardItem/:id", async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const item = await buyingCardCollection.findOne(query);
+            res.send(item);
+        });
+
         //  updating item after buying
         app.put("/product/:id", async (req, res) => {
             const id = req.params.id;
@@ -84,6 +91,22 @@ async function run() {
                 },
             }
             const result = await productCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        });
+
+        //  updating user
+        app.put("/add-user/:email", async (req, res) => {
+            const email = req.params.email;
+            const updateUser = req.body;
+            const filter = { userEmail: email };
+            const options = { upsert: true };
+
+            const updateDoc = {
+                $set: {
+                    user: updateUser.user
+                },
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
             res.send(result);
         });
 
@@ -111,17 +134,35 @@ async function run() {
         //  My card item
         app.post('/cardItem', async (req, res) => {
             const myItem = req.body;
-            const result = await buyingCardCollection.insertOne(myItem);
-            res.send(result);
+            const tokenInfo = req.headers.authoraization;
+            const [email, accessToken] = tokenInfo?.split(" ");
+            const decoded = verifyToken(accessToken);
+            if (email === decoded.email) {
+                const result = await buyingCardCollection.insertOne(myItem);
+                res.send(result);
+            } else {
+                res.send({ success: 'UnAuthoraized access' });
+            }
+
         });
 
         //  Adding review to database
         app.post('/add-review', async (req, res) => {
             const review = req.body;
-            const result = await reviewCollection.insertOne(review);
-            res.send(result);
+            const tokenInfo = req.headers.authoraization;
+            const [email, accessToken] = tokenInfo?.split(" ");
+            const decoded = verifyToken(accessToken);
+
+            if (email === decoded.email) {
+                const result = await reviewCollection.insertOne(review);
+                res.send(result);
+
+            } else {
+                res.send({ success: 'UnAuthoraized access' });
+            }
+
         });
-        
+
         //  Get My card Item from database 
 
         app.get('/myitems', async (req, res) => {
@@ -154,7 +195,22 @@ async function run() {
         //     res.send(result);
         // })
 
+        // app.post('/create-payment-intent', async (req, res) => {
+        //     const service = req.body;
+        //     const price = service.price;
+        //     const amount = price * 100;
 
+        //     // Create a PaymentIntent with the order amount and currency
+        //     const paymentIntent = await stripe.paymentIntents.create({
+        //         amount: amount,
+        //         currency: "usd",
+        //         payment_method: ['card']
+        //     });
+
+        //     res.send({
+        //         clientSecret: paymentIntent.client_secret,
+        //     })
+        // })
 
 
 
@@ -170,3 +226,19 @@ async function run() {
 
 run().catch(console.dir);
 
+
+//  JWT verifing tocken function
+function verifyToken(token) {
+    let email;
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+        if (err) {
+            email = 'Invalid email'
+        }
+        if (decoded) {
+            email = decoded
+            console.log(decoded);
+        }
+    });
+
+    return email;
+}
