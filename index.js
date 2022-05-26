@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log('ASD Industrial server is listenning, ', port);
+    console.log('ASD Industrial heroku server is listenning, ', port);
 });
 
 
